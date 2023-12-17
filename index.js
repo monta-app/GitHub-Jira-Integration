@@ -2,6 +2,7 @@
 
 const core = require('@actions/core');
 const github = require('@actions/github');
+const util = require('util');
 const Github = require('./services/github');
 const Jira = require('./services/jira');
 const request = require('./services/request');
@@ -44,8 +45,15 @@ async function main() {
     core.setFailed('Only support pull request trigger');
   }
 
+  const latestPr = await github.getOctokit(githubToken).request('GET /repos/{owner}/{repo}/pulls/{pull_number}', {
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
+    pull_number: pr.number,
+  });
+  const latestPrTitle = latestPr.data.title ? latestPr.data.title : pr.title;
+
   // `AB-1234` Jira issue key
-  const foundInTitle = pr.title.match('\\w+-\\d+');
+  const foundInTitle = latestPrTitle.match('\\w+-\\d+');
   let key;
   if (foundInTitle) [key] = foundInTitle;
   // no key detected in title, find in branch name
@@ -86,7 +94,7 @@ async function main() {
     } else {
       // issue name not existed in title, update it
       await gitService.updatePR({
-        title: `[${key}] ${pr.title}`,
+        title: `${latestPrTitle} [${key}]`,
         body: `[${key}${issueTitle ? `: ${issueTitle}` : ''}](${host}/browse/${key})\n${pr.body}`,
       });
     }
@@ -132,12 +140,21 @@ async function main() {
   if (isCreateIssue) {
     if (!project) throw new Error('Creating issue need project');
     if (!type) throw new Error('Creating issue need type');
+    if (foundInTitle || key) {
+      core.info('Jira issue detected in PR title/branch');
+      process.exit(0);
+    } else {
+      core.info('No jira issue detected in PR title/branch');
+    }
 
-    const userId = await jira.getUserIdByFuzzyName(github.context.actor).catch(core.info);
+    const userData = await github.getOctokit(githubToken)
+      .request('GET /users/{username}', { username: github.context.actor });
+    const fullName = userData.data.name;
+    const userId = await jira.getUserIdByFuzzyName(fullName).catch(core.info);
 
-    const issue = await jira.postIssue(pr.title, userId);
+    const issue = await jira.postIssue(latestPrTitle, userId);
     key = issue.key;
-    issueTitle = pr.title;
+    issueTitle = latestPrTitle;
 
     if (board) {
       // move card to active sprint
@@ -187,7 +204,7 @@ async function main() {
   // update pull request title and desc
   const newPR = { body: `[${key}${foundInTitle ? `: ${issueTitle}` : ''}](${host}/browse/${key})\n${pr.body}` };
   // if title has no jira issue, insert it
-  if (isCreateIssue || !foundInTitle) { newPR.title = `[${key}] ${pr.title}`; }
+  if (isCreateIssue || !foundInTitle) { newPR.title = `${latestPrTitle} [${key}]`; }
 
   await gitService.updatePR(newPR);
 
