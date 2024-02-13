@@ -27,6 +27,8 @@ async function main() {
   const appendDescAfterRegex = core.getInput('appendDescAfterRegex');
   const isAddFixVersionOnMerge = core.getInput('isAddFixVersionOnMerge').toLowerCase() === 'true';
 
+  const jiraTicketFormat = '\\D+-\\d+';
+
   const gitService = new Github({ github, githubToken });
 
   const jira = new Jira({
@@ -53,12 +55,12 @@ async function main() {
   const latestPrTitle = latestPr.data.title ? latestPr.data.title : pr.title;
 
   // `AB-1234` Jira issue key
-  const foundInTitle = latestPrTitle.match('\\w+-\\d+');
+  const foundInTitle = latestPrTitle.match(jiraTicketFormat);
   let key;
   if (foundInTitle) [key] = foundInTitle;
   // no key detected in title, find in branch name
   if (!key) {
-    const foundInBranch = pr.head.ref.match('\\w+-\\d+');
+    const foundInBranch = pr.head.ref.match(jiraTicketFormat);
     if (foundInBranch)[key] = foundInBranch;
   }
 
