@@ -12093,6 +12093,7 @@ async function main() {
 
   let issueTitle;
   if (email && token && key) {
+    core.info(`Detected jira issue in PR title/branch: ${key}`);
     issueTitle = await jira.getIssueSummary(key);
   }
 
