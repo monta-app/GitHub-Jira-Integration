@@ -14,6 +14,6 @@ spec:
   # See lifecycle common values: https://backstage.io/docs/features/software-catalog/descriptor-format/#speclifecycle-required
   lifecycle: production
   # Name of the squad responsible for the project, e.g. sre or cpi
-  owner: financial-services
+  owner: fs-payments
   # Name of the greater system, e.g. "solar" is a part of the home system
   system: Financial
