@@ -1,13 +1,12 @@
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  # Name of the project 
+  # Name of the project
   name: GitHub-Jira-Integration
   description: automatically create or bind pull request to jira issue, resolve it when merged
   # Specifies the directory of the docs
   annotations:
     backstage.io/techdocs-ref: dir:.
-
 # The spec defines who becomes the owner of the system in backstage
 spec:
   type: github action
@@ -16,4 +15,4 @@ spec:
   # Name of the squad responsible for the project, e.g. sre or cpi
   owner: fs-payments
   # Name of the greater system, e.g. "solar" is a part of the home system
-  system: Financial
+  system: financial-services-division
